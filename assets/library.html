@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>הספרייה של השמורים שלי</title>
+<style>
+@font-face{font-family:Futurism;src:url(https://brain-fonts.pages.dev/Futurism-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Futurism;src:url(https://brain-fonts.pages.dev/Futurism-Bold.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:Futurism;src:url(https://brain-fonts.pages.dev/Futurism-Black.woff2) format("woff2");font-weight:900;font-display:swap}
+:root{--ink:#0B1424;--muted:#4A5568;--bg:#F4F6FB;--card:#fff;--line:#DCE2EE;--teal:#0FA89A;--blue:#3E63DD;--head:Futurism,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;--body:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+bdi{unicode-bidi:isolate}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 var(--body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(#C9D2E3 1px,transparent 1px);background-size:26px 26px;opacity:.55;z-index:-1}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+.skip{position:absolute;right:-999px;top:8px;background:#fff;padding:8px 14px;border-radius:10px;z-index:10}
+.skip:focus{right:12px}
+
+/* פתיחה */
+#intro{position:fixed;inset:0;z-index:50;background:var(--bg);transition:opacity .6s}
+#intro canvas{display:block;width:100%;height:100%}
+#intro.gone{opacity:0;pointer-events:none}
+#skipIntro{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);font:700 16px/1 var(--head);background:#fff;color:var(--ink);border:2px solid var(--ink);border-radius:999px;padding:12px 26px 10px;cursor:pointer}
+
+/* ראש */
+header{padding:44px 0 10px}
+.kicker{font:700 15px/1 var(--head);letter-spacing:.02em;color:#0A6F66;display:inline-flex;gap:10px;align-items:center}
+.kicker::before{content:"";width:28px;height:4px;border-radius:4px;background:linear-gradient(90deg,#7C9CF0,#77CEBF)}
+h1{font:900 clamp(38px,6.2vw,76px)/1.04 var(--head);margin:14px 0 10px;letter-spacing:-.01em}
+h1 .num{background:linear-gradient(100deg,#0FA89A,#3E63DD);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font:400 clamp(17px,2vw,21px)/1.5 var(--body);color:var(--muted);margin:0}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0 6px}
+.btn{font:700 16px/1 var(--head);border-radius:999px;padding:14px 22px 12px;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.btn.primary{background:var(--ink);color:#fff}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(11,20,36,.14)}
+
+/* חיפוש */
+.search{position:sticky;top:0;z-index:20;padding:14px 0 12px;background:var(--bg);box-shadow:0 10px 14px -12px rgba(11,20,36,.18)}
+.search label{position:absolute;right:-9999px}
+.search input{width:100%;font:700 clamp(18px,2.2vw,24px)/1 var(--head);padding:18px 58px 16px 22px;border-radius:18px;border:3px solid var(--ink);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' fill='none' stroke='%230B1424' stroke-width='3' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m17 17 6 6'/%3E%3C/svg%3E") no-repeat right 20px center;color:var(--ink);box-shadow:0 8px 28px rgba(11,20,36,.08)}
+.search input::placeholder{color:#8A94A6;font-weight:400}
+.hits{font:700 15px/1 var(--body);color:var(--muted);margin:10px 4px 0;min-height:15px}
+
+/* כוננית */
+.case{background:#fff;border:2px solid var(--line);border-radius:26px;padding:22px 22px 10px;margin:18px 0 8px;box-shadow:0 14px 40px rgba(11,20,36,.07)}
+.shelf{display:grid;grid-template-columns:190px 1fr;gap:16px;align-items:end;padding:6px 0 0;cursor:pointer;border-radius:12px}
+.shelf:hover .shelf-name{text-decoration:underline}
+.shelf-label{padding-bottom:10px}
+.shelf-name{font:900 19px/1.1 var(--head);display:flex;align-items:center;gap:8px}
+.sw{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+.shelf-count{font:700 14px/1 var(--body);color:var(--muted);margin-top:4px}
+.books{display:flex;align-items:flex-end;height:64px;gap:1px;border-bottom:7px solid #2A3346;padding:0 2px;overflow:hidden}
+.book{flex:0 0 auto;border-radius:2px 2px 0 0;transition:opacity .25s,transform .25s,filter .25s}
+.case.dim .book{opacity:.12}
+.case.dim .book.hit{opacity:1;transform:translateY(-8px);filter:saturate(1.3)}
+
+/* כרטיסים */
+section{margin:46px 0}
+h2{font:900 clamp(26px,3.4vw,38px)/1.1 var(--head);margin:0 0 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h2 .dot{width:16px;height:16px;border-radius:50%;flex:0 0 auto}
+h2 .count{font:700 18px/1 var(--body);color:var(--muted)}
+.lead{color:var(--muted);margin:0 0 18px}
+.todo{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.task{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;background:#fff;border:2px solid var(--line);border-radius:18px;padding:16px;border-right:8px solid var(--c)}
+.task input{width:26px;height:26px;margin:2px 0 0;accent-color:var(--teal);cursor:pointer}
+.task .what{font:700 18px/1.4 var(--body);margin:0}
+.task .why{font-size:15px;color:var(--muted);margin:4px 0 0}
+.task.done .what{text-decoration:line-through;opacity:.5}
+.task img{width:58px;height:72px;object-fit:cover;border-radius:10px;background:#E8ECF4}
+.chip{display:inline-block;font:700 12px/1 var(--head);color:var(--ink);background:#fff;border:2px solid var(--c);border-radius:999px;padding:4px 10px 3px;margin-top:8px;text-decoration:none}
+.chip.go{background:var(--ink);border-color:var(--ink);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.post{background:#fff;border:2px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;transition:transform .15s,box-shadow .15s}
+.post:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(11,20,36,.12)}
+.post .th{aspect-ratio:4/5;background:var(--c);position:relative;overflow:hidden}
+.post .th img{width:100%;height:100%;object-fit:cover;display:block}
+.post .th .kind{position:absolute;top:8px;right:8px;font:700 12px/1 var(--head);background:rgba(11,20,36,.78);color:#fff;border-radius:999px;padding:5px 9px 4px}
+.post .tx{padding:12px 14px 14px;border-top:5px solid var(--c);display:flex;flex-direction:column;gap:6px;flex:1}
+.post .s{font:600 16px/1.4 var(--body);margin:0}
+.post .meta{font-size:13px;color:var(--muted);margin-top:auto;direction:rtl}
+.post .do{font-size:14px;font-weight:700;color:#0B6E64;margin:0}
+.more{margin:16px auto 0;display:block}
+mark{background:#FFE58A;color:inherit;border-radius:3px;padding:0 2px}
+.empty{color:var(--muted);font:700 18px/1.4 var(--head)}
+
+/* כרטיס שיתוף */
+dialog{border:0;border-radius:24px;padding:22px;max-width:min(560px,94vw);box-shadow:0 30px 80px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(11,20,36,.55)}
+dialog img{width:100%;border-radius:14px;display:block}
+dialog .row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+footer{padding:40px 0 60px;color:var(--muted);font-size:14px;text-align:center}
+
+@media (max-width:720px){
+  .wrap{padding:0 16px}
+  header{padding-top:28px}
+  .case{padding:14px 12px 6px;border-radius:20px}
+  .shelf{grid-template-columns:1fr;gap:4px}
+  .shelf-label{display:flex;gap:8px;align-items:baseline;padding-bottom:0}
+  .books{height:46px}
+  .todo{grid-template-columns:1fr}
+  .grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .post .s{font-size:14px}
+  .task img{display:none}
+  .task{grid-template-columns:auto 1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">דילוג לתוכן</a>
+<div id="intro" aria-hidden="true"><canvas id="cv"></canvas><button id="skipIntro" type="button">לספרייה</button></div>
+<div class="wrap" id="main">
+  <header>
+    <div class="kicker">הספרייה של השמורים</div>
+    <h1 id="title"></h1>
+    <p class="sub" id="subline"></p>
+    <div class="actions">
+      <a class="btn primary" href="#todo">מה שווה לעשות מזה</a>
+      <button class="btn" id="shareBtn" type="button">כרטיס לשיתוף</button>
+      <button class="btn" id="replay" type="button">לראות שוב את הסידור</button>
+    </div>
+  </header>
+  <div class="search" role="search">
+    <label for="q">חיפוש בכל השמורים</label>
+    <input id="q" type="search" autocomplete="off" placeholder="חיפוש בכל השמורים: מתכון, פרומפט, אימון...">
+    <div class="hits" id="hits" aria-live="polite"></div>
+  </div>
+  <div class="case" id="case" aria-label="הכוננית: מדף לכל נושא"></div>
+  <section id="results" hidden><h2>תוצאות</h2><div class="grid" id="resultsGrid"></div><button class="btn more" id="resultsMore" type="button" hidden>עוד תוצאות</button></section>
+  <section id="todo"><h2>שווה לעשות מזה <span class="count" id="todoCount"></span></h2><p class="lead">הדברים מהשמורים שאפשר באמת לעשות, אחד אחד. סימון נשמר במחשב הזה.</p><div class="todo" id="todoList"></div></section>
+  <div id="shelves"></div>
+  <footer>הדף נבנה במחשב שלך מהשמורים שלך. שום דבר לא נשלח לשום מקום. הסיכומים נכתבו בידי AI ועלולים לטעות, אז לפני שעושים משהו כדאי להציץ בפוסט המקורי.</footer>
+</div>
+<dialog id="shareDlg" aria-labelledby="shareTitle">
+  <h2 id="shareTitle" style="font-size:24px">כרטיס לשיתוף</h2>
+  <img id="shareImg" alt="כרטיס סיכום של הספרייה">
+  <div class="row"><a class="btn primary" id="shareDl" download="my-saved-library.png" href="#">להוריד תמונה</a><button class="btn" id="shareClose" type="button">סגירה</button></div>
+</dialog>
+<script>
+'use strict';
+const DATA = /*__DATA__*/null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Number(n).toLocaleString('he-IL');
+const KIND = {reel:'ריל', photo:'תמונה', carousel:'קרוסלה', video:'וידאו', post:'פוסט'};
+const QS = new URLSearchParams(location.search);
+const T = DATA.topics, P = DATA.posts;
+const color = p => T[p.t].color;
+const rnd = (i, k = 1) => { const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
+
+// ---------------------------------------------------------------- ראש
+$('title').innerHTML = `<span class="num">${fmt(DATA.count)}</span> שמורים.<br>${fmt(T.length)} מדפים.`;
+const since = DATA.oldest ? `פוסטים מ-${DATA.oldest.slice(0, 4)} ועד היום` : '';
+$('subline').textContent = [since, `${fmt(DATA.todo.length)} דברים ששווה לעשות מהם`].filter(Boolean).join(' · ');
+
+// ---------------------------------------------------------------- כוננית
+const byTopic = T.map(() => []);
+P.forEach((p, i) => byTopic[p.t].push(i));
+const maxCount = Math.max(...byTopic.map(a => a.length));
+function buildCase() {
+  const box = $('case');
+  box.innerHTML = T.map((t, ti) => {
+    const ids = byTopic[ti];
+    const books = ids.map(i => {
+      const h = 62 + rnd(i) * 38, l = (rnd(i, 2) - .5) * 18;
+      return `<span class="book" data-i="${i}" style="width:calc(${(100 / maxCount).toFixed(4)}% - 1px);min-width:2px;height:${h.toFixed(0)}%;background:${t.color};filter:brightness(${(100 + l).toFixed(0)}%)"></span>`;
+    }).join('');
+    return `<div class="shelf" data-t="${ti}" role="button" tabindex="0" aria-label="${esc(t.name)}: ${fmt(t.count)} פוסטים, מעבר למדף">
+      <div class="shelf-label"><div class="shelf-name"><span class="sw" style="background:${t.color}"></span>${esc(t.name)}</div><div class="shelf-count">${fmt(t.count)}</div></div>
+      <div class="books">${books}</div></div>`;
+  }).join('');
+  box.querySelectorAll('.shelf').forEach(s => {
+    const go = () => { const sec = $('shelf-' + s.dataset.t); openShelf(+s.dataset.t); sec.scrollIntoView({behavior: 'smooth'}); };
+    s.addEventListener('click', go);
+    s.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+}
+
+// ---------------------------------------------------------------- כרטיס פוסט
+// Latin runs (names, @users, /commands) are isolated so they never flip inside a Hebrew line
+const LATIN = /[@#/]?[A-Za-z][A-Za-z0-9_.'&\-+/@#]*(?:\s+[@#/]?[A-Za-z0-9][A-Za-z0-9_.'&\-+/@#]*)*/g;
+function hl(text, q) {
+  let t = String(text ?? '');
+  if (q) t = t.replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '\u0001$1\u0002');
+  t = t.replace(LATIN, m => '\u0003' + m + '\u0004');
+  return esc(t).replace(/\u0003/g, '<bdi>').replace(/\u0004/g, '</bdi>').replace(/\u0001/g, '<mark>').replace(/\u0002/g, '</mark>');
+}
+function card(i, q) {
+  const p = P[i], c = color(p);
+  const img = p.th ? `<img src="${p.th}" alt="" loading="lazy">` : '';
+  return `<a class="post" href="${esc(p.u)}" target="_blank" rel="noopener" style="--c:${c}">
+    <div class="th">${img}<span class="kind">${KIND[p.k] || 'פוסט'}</span></div>
+    <div class="tx"><p class="s">${hl(p.s, q)}</p>${p.do ? `<p class="do">${hl(p.do, q)}</p>` : ''}
+    <div class="meta"><bdi>@${esc(p.a)}</bdi>${p.p ? ' · ' + p.p.slice(0, 7).split('-').reverse().join('.') : ''}</div></div></a>`;
+}
+
+// ---------------------------------------------------------------- שווה לעשות
+function buildTodo() {
+  $('todoCount').textContent = DATA.todo.length ? fmt(DATA.todo.length) : '';
+  if (!DATA.todo.length) { $('todoList').innerHTML = '<p class="empty">לא נמצא בשמורים משהו מעשי מספיק. גם זה מידע.</p>'; return; }
+  $('todoList').innerHTML = DATA.todo.map(i => {
+    const p = P[i], key = 'savedlib:done:' + p.id, done = localStorage.getItem(key) === '1';
+    return `<div class="task${done ? ' done' : ''}" style="--c:${color(p)}">
+      <input type="checkbox" id="td${i}" data-key="${key}"${done ? ' checked' : ''} aria-label="סימון שעשיתי: ${esc(p.do)}">
+      <div><label class="what" for="td${i}">${hl(p.do)}</label><p class="why">${hl(p.s)}</p>
+      <span class="chip">${esc(T[p.t].name)}</span> <a class="chip go" href="${esc(p.u)}" target="_blank" rel="noopener">לפוסט</a></div>
+      ${p.th ? `<img src="${p.th}" alt="" loading="lazy">` : ''}</div>`;
+  }).join('');
+  $('todoList').querySelectorAll('input').forEach(x => x.addEventListener('change', () => {
+    try { localStorage.setItem(x.dataset.key, x.checked ? '1' : '0'); } catch (e) {}
+    x.closest('.task').classList.toggle('done', x.checked);
+  }));
+}
+
+// ---------------------------------------------------------------- מדפים
+const PAGE = 12, shown = T.map(() => PAGE);
+function buildShelves() {
+  $('shelves').innerHTML = T.map((t, ti) => `<section id="shelf-${ti}" style="--c:${t.color}">
+    <h2><span class="dot" style="background:${t.color}"></span>${esc(t.name)} <span class="count">${fmt(t.count)}</span></h2>
+    <div class="grid" id="g${ti}"></div><button class="btn more" id="m${ti}" type="button"></button></section>`).join('');
+  T.forEach((t, ti) => { renderShelf(ti); $('m' + ti).addEventListener('click', () => { shown[ti] += 48; renderShelf(ti); }); });
+}
+function renderShelf(ti) {
+  const ids = byTopic[ti];
+  $('g' + ti).innerHTML = ids.slice(0, shown[ti]).map(i => card(i)).join('');
+  const rest = ids.length - shown[ti], m = $('m' + ti);
+  m.hidden = rest <= 0;
+  m.textContent = rest > 0 ? `עוד ${fmt(Math.min(rest, 48))} מתוך ${fmt(rest)} במדף` : '';
+}
+function openShelf(ti) { if (shown[ti] < 24) { shown[ti] = 24; renderShelf(ti); } }
+
+// ---------------------------------------------------------------- חיפוש
+const norm = s => String(s || '').toLowerCase().replace(/[֑-ׇ]/g, '');
+const hay = P.map(p => norm([p.s, p.do, p.c, p.a, T[p.t].name].join(' ')));
+let rLimit = 60, lastQ = '';
+function search() {
+  const raw = $('q').value.trim(), q = norm(raw), box = $('case');
+  box.querySelectorAll('.book.hit').forEach(b => b.classList.remove('hit'));
+  if (!q) { box.classList.remove('dim'); $('hits').textContent = ''; $('results').hidden = true; return; }
+  if (q !== lastQ) rLimit = 60;
+  lastQ = q;
+  const words = q.split(/\s+/).filter(Boolean);
+  const found = [];
+  hay.forEach((h, i) => { if (words.every(w => h.includes(w))) found.push(i); });
+  box.classList.add('dim');
+  const set = new Set(found);
+  box.querySelectorAll('.book').forEach(b => { if (set.has(+b.dataset.i)) b.classList.add('hit'); });
+  $('hits').textContent = found.length ? `נמצאו ${fmt(found.length)} שמורים` : 'לא נמצא. אפשר לנסות מילה אחרת';
+  $('results').hidden = !found.length;
+  $('resultsGrid').innerHTML = found.slice(0, rLimit).map(i => card(i, raw.split(/\s+/)[0])).join('');
+  $('resultsMore').hidden = found.length <= rLimit;
+}
+let st;
+$('q').addEventListener('input', () => { clearTimeout(st); st = setTimeout(search, 90); });
+$('resultsMore').addEventListener('click', () => { rLimit += 60; search(); });
+
+// ---------------------------------------------------------------- כרטיס לשיתוף
+function clip(s, n) {
+  if (s.length <= n) return s;
+  const words = s.slice(0, n).split(' ');
+  words.pop();
+  while (words.length > 1 && /^[^\u0590-\u05FF]*$/.test(words[words.length - 1])) words.pop();
+  return words.join(' ') + '…';
+}
+function shareCard() {
+  const c = document.createElement('canvas'); c.width = 1080; c.height = 1350;
+  const g = c.getContext('2d'), F = "Futurism,'Segoe UI',system-ui,Arial,sans-serif";
+  g.fillStyle = '#F4F6FB'; g.fillRect(0, 0, 1080, 1350);
+  g.fillStyle = '#C9D2E3';
+  for (let y = 13; y < 1350; y += 26) for (let x = 13; x < 1080; x += 26) g.fillRect(x, y, 2, 2);
+  const grad = g.createLinearGradient(0, 0, 1080, 0); grad.addColorStop(0, '#7C9CF0'); grad.addColorStop(1, '#77CEBF');
+  g.fillStyle = grad; g.fillRect(0, 0, 1080, 14);
+  g.direction = 'rtl'; g.textAlign = 'right'; g.fillStyle = '#0B1424';
+  g.font = `700 40px ${F}`; g.fillStyle = '#0FA89A'; g.fillText('הספרייה של השמורים שלי', 990, 120);
+  g.fillStyle = '#0B1424'; g.font = `900 210px ${F}`; g.fillText(fmt(DATA.count), 990, 330);
+  g.font = `700 52px ${F}`; g.fillText(`פוסטים שמורים, ${fmt(T.length)} מדפים`, 990, 410);
+  // כוננית קטנה: אורך כל מדף לפי מספר הפוסטים בו
+  const top = 480, rowH = Math.min(78, 520 / T.length), max = Math.max(...T.map(t => t.count));
+  T.forEach((t, i) => {
+    const y = top + i * rowH, w = 600 * t.count / max;
+    g.fillStyle = t.color; g.fillRect(990 - 300 - w, y + 8, w, rowH - 22);
+    g.fillStyle = '#2A3346'; g.fillRect(90, y + rowH - 14, 600, 5);
+    g.fillStyle = '#0B1424'; g.font = `700 ${Math.round(rowH * .4)}px ${F}`; g.textAlign = 'right';
+    g.fillText(t.name, 990, y + rowH * .6);
+    g.fillStyle = '#4A5568'; g.font = `400 ${Math.round(rowH * .32)}px ${F}`; g.fillText(fmt(t.count), 990, y + rowH * .6 + rowH * .34);
+  });
+  const y0 = top + T.length * rowH + 50;
+  g.fillStyle = '#0B1424'; g.font = `900 48px ${F}`; g.textAlign = 'right';
+  g.fillText(`${fmt(DATA.todo.length)} דברים ששווה לעשות מזה`, 990, y0);
+  g.font = `700 32px ${F}`; g.fillStyle = '#4A5568';
+  DATA.todo.slice(0, 3).forEach((i, k) => {
+    const s = clip(P[i].do, 40);
+    g.fillStyle = T[P[i].t].color; g.beginPath(); g.arc(975, y0 + 62 + k * 52 - 10, 9, 0, 7); g.fill();
+    g.fillStyle = '#0B1424'; g.fillText(s, 950, y0 + 62 + k * 52);
+  });
+  g.font = `400 24px ${F}`; g.fillStyle = '#8A94A6'; g.textAlign = 'center';
+  g.fillText('נבנה במחשב שלי מהשמורים שלי', 540, 1310);
+  return c.toDataURL('image/png');
+}
+$('shareBtn').addEventListener('click', () => {
+  const url = shareCard();
+  $('shareImg').src = url; $('shareDl').href = url;
+  $('shareDlg').showModal();
+});
+$('shareClose').addEventListener('click', () => $('shareDlg').close());
+
+// ---------------------------------------------------------------- הפתיחה: הקיר מתפרק לכוננית
+const intro = $('intro'), cv = $('cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, atlas = null, tiles = [], raf = 0, t0 = 0, running = false;
+const ATW = 48, ATH = 60, ACOLS = 40;
+const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;
+const ease = u => u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+const eout = u => 1 - Math.pow(1 - u, 3);
+const prog = (a, b, x) => clamp((x - a) / (b - a));
+const DUR = 6.6;
+function loadAtlas() {
+  const c = document.createElement('canvas');
+  c.width = ACOLS * ATW; c.height = Math.ceil(P.length / ACOLS) * ATH;
+  const g = c.getContext('2d');
+  return Promise.all(P.map((p, i) => new Promise(res => {
+    const x = (i % ACOLS) * ATW, y = Math.floor(i / ACOLS) * ATH;
+    g.fillStyle = color(p); g.fillRect(x, y, ATW, ATH);
+    if (!p.th) return res();
+    const im = new Image();
+    im.onload = () => { g.drawImage(im, x, y, ATW, ATH); res(); };
+    im.onerror = () => res();
+    im.src = p.th;
+  }))).then(() => c);
+}
+function layout() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const n = P.length, mobile = W < 720;
+  // הקיר: כל השמורים ממלאים את המסך
+  let cols = 4;
+  for (let c = 3; c < 120; c++) { const r = Math.ceil(n / c); if (r * (W / c) * 1.25 < H) break; cols = c; }
+  const tw = W / cols, th = tw * 1.25, rows = Math.ceil(n / cols), oy = (H - rows * th) / 2;
+  // הכוננית
+  const padX = mobile ? 16 : Math.max(40, W * .06), labelW = mobile ? 0 : Math.min(260, W * .2);
+  const top = mobile ? H * .2 : H * .17, bottom = H * .92, rowH = (bottom - top) / T.length;
+  const shelfR = W - padX - labelW, shelfL = padX, shelfW = shelfR - shelfL, sw = shelfW / maxCount;
+  const pos = T.map(() => 0);
+  tiles = P.map((p, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    const k = pos[p.t]++;
+    const yBase = top + (p.t + 1) * rowH - (mobile ? 6 : 10);
+    const bh = (mobile ? rowH * .5 : rowH * .66) * (.78 + rnd(i) * .22);
+    return {
+      i, t: p.t, ax: W - (c + 1) * tw, ay: oy + r * th, aw: tw, ah: th,
+      bx: shelfR - (k + 1) * sw, by: yBase - bh, bw: Math.max(1, sw - (sw > 3 ? 1 : 0)), bh,
+      d: (c / cols) * .5 + rnd(i, 3) * .55, lift: 80 + rnd(i, 4) * 220, light: (rnd(i, 2) - .5) * .22,
+    };
+  });
+  layout.shelf = {top, rowH, shelfR, shelfL, labelW, mobile, padX};
+}
+function draw(t) {
+  ctx.fillStyle = '#F4F6FB'; ctx.fillRect(0, 0, W, H);
+  const fill = prog(0, 1.1, t), tint = prog(1.7, 2.6, t), fly0 = 2.6, flyLen = 1.25;
+  const S = layout.shelf;
+  // מדפים
+  const plank = prog(3.2, 4.2, t);
+  if (plank > 0) {
+    T.forEach((tp, ti) => {
+      const y = S.top + (ti + 1) * S.rowH - (S.mobile ? 6 : 10);
+      ctx.fillStyle = '#2A3346'; ctx.globalAlpha = plank;
+      const w = (S.shelfR - S.shelfL) * ease(plank);
+      ctx.fillRect(S.shelfR - w, y, w, S.mobile ? 5 : 7);
+      ctx.globalAlpha = 1;
+    });
+  }
+  for (const k of tiles) {
+    const appear = clamp((fill - (k.ay / H) * .6) / .4);
+    if (appear <= 0) continue;
+    const u = ease(prog(fly0 + k.d, fly0 + k.d + flyLen, t));
+    const x = k.ax + (k.bx - k.ax) * u, y = k.ay + (k.by - k.ay) * u - Math.sin(u * Math.PI) * k.lift;
+    const w = k.aw + (k.bw - k.aw) * u, h = k.ah + (k.bh - k.ah) * u;
+    const sc = u > 0 ? 1 : .6 + .4 * eout(appear);
+    const cx = x + w / 2, cy = y + h / 2, ww = w * sc, hh = h * sc;
+    ctx.globalAlpha = u > 0 ? 1 : appear;
+    const ax = (k.i % ACOLS) * ATW, ay = Math.floor(k.i / ACOLS) * ATH;
+    if (u < .65) ctx.drawImage(atlas, ax, ay, ATW, ATH, cx - ww / 2 + .5, cy - hh / 2 + .5, ww - 1, hh - 1);
+    const colA = Math.max(tint * .38 * (1 - prog(0, .1, u)), prog(.25, .7, u));
+    if (colA > 0) {
+      ctx.globalAlpha = colA;
+      ctx.fillStyle = T[k.t].color; ctx.fillRect(cx - ww / 2 + .5, cy - hh / 2 + .5, ww - 1, hh - 1);
+      if (k.light && u > .7) { ctx.globalAlpha = Math.abs(k.light) * prog(.7, 1, u); ctx.fillStyle = k.light > 0 ? '#fff' : '#000'; ctx.fillRect(cx - ww / 2 + .5, cy - hh / 2 + .5, ww - 1, hh - 1); }
+    }
+    ctx.globalAlpha = 1;
+  }
+  // המונה על הקיר
+  const cnt = prog(.5, 1.7, t), cntOut = prog(2.45, 2.8, t);
+  if (cnt > 0 && cntOut < 1) {
+    const n = Math.round(DATA.count * eout(cnt));
+    const fs = Math.min(W * .16, 190);
+    ctx.save(); ctx.globalAlpha = 1 - cntOut;
+    ctx.font = `900 ${fs}px Futurism,'Segoe UI',system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'rtl';
+    const txt = fmt(n), tw = Math.max(ctx.measureText(fmt(DATA.count)).width, fs * 2);
+    const bw = tw + fs * .7, bh = fs * 1.25;
+    ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(11,20,36,.35)'; ctx.shadowBlur = 40;
+    roundRect(W / 2 - bw / 2, H / 2 - bh / 2, bw, bh, fs * .22); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.lineWidth = Math.max(6, fs * .05); const gr = ctx.createLinearGradient(W / 2 - bw / 2, 0, W / 2 + bw / 2, 0);
+    gr.addColorStop(0, '#7C9CF0'); gr.addColorStop(1, '#77CEBF'); ctx.strokeStyle = gr; ctx.stroke();
+    ctx.fillStyle = '#0B1424'; ctx.fillText(txt, W / 2, H / 2 + fs * .04);
+    ctx.restore();
+  }
+  // שמות המדפים
+  const lab = prog(4.1, 4.9, t);
+  if (lab > 0) {
+    T.forEach((tp, ti) => {
+      const a = clamp(lab * 1.6 - ti * .08);
+      if (a <= 0) return;
+      ctx.globalAlpha = a; ctx.direction = 'rtl'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+      const y = S.top + (ti + 1) * S.rowH - (S.mobile ? 6 : 10);
+      const fs = Math.min(S.rowH * (S.mobile ? .3 : .34), 40);
+      if (S.mobile) {
+        ctx.font = `900 ${fs}px Futurism,'Segoe UI',system-ui,sans-serif`; ctx.fillStyle = tp.color;
+        ctx.fillText(`${tp.name}  ${fmt(tp.count)}`, W - S.padX, y - S.rowH * .58);
+      } else {
+        ctx.font = `900 ${fs}px Futurism,'Segoe UI',system-ui,sans-serif`; ctx.fillStyle = tp.color;
+        const nw = ctx.measureText(tp.name).width, room = S.labelW - 16;
+        if (nw > room) ctx.font = `900 ${fs * room / nw}px Futurism,'Segoe UI',system-ui,sans-serif`;
+        ctx.fillText(tp.name, W - S.padX, y - fs * .55);
+        ctx.font = `700 ${fs * .62}px Futurism,'Segoe UI',system-ui,sans-serif`; ctx.fillStyle = '#4A5568';
+        ctx.fillText(fmt(tp.count), W - S.padX, y + 2);
+      }
+      ctx.globalAlpha = 1;
+    });
+  }
+}
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function endIntro() {
+  cancelAnimationFrame(raf); running = false;
+  intro.classList.add('gone');
+  document.body.style.overflow = '';
+  setTimeout(() => { intro.hidden = true; }, 650);
+}
+function frame(now) {
+  const t = (now - t0) / 1000;
+  draw(Math.min(t, DUR));
+  if (t >= DUR + .5) return endIntro();
+  raf = requestAnimationFrame(frame);
+}
+async function playIntro() {
+  if (!atlas) atlas = await loadAtlas();
+  try { await document.fonts.load('900 60px Futurism'); } catch (e) {}
+  intro.hidden = false; intro.classList.remove('gone');
+  document.body.style.overflow = 'hidden';
+  layout(); running = true; t0 = performance.now();
+  raf = requestAnimationFrame(frame);
+}
+window.__seek = async t => { if (!atlas) atlas = await loadAtlas(); intro.hidden = false; intro.classList.remove('gone'); layout(); cancelAnimationFrame(raf); draw(t); };
+window.__dur = DUR;
+$('skipIntro').addEventListener('click', endIntro);
+intro.addEventListener('click', e => { if (e.target === cv) endIntro(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && running) endIntro(); });
+addEventListener('resize', () => { if (running) layout(); });
+$('replay').addEventListener('click', () => { scrollTo(0, 0); playIntro(); });
+
+buildCase(); buildTodo(); buildShelves();
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (QS.get('nointro') === '1' || reduced) { intro.hidden = true; window.__ready = true; }
+else playIntro().then(() => { window.__ready = true; });
+</script>
+</body>
+</html>
