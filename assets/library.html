@@ -25,6 +25,21 @@ a{color:inherit}
 #intro{position:fixed;inset:0;z-index:50;background:var(--bg);transition:opacity .6s}
 #intro canvas{display:block;width:100%;height:100%}
 #intro.gone{opacity:0;pointer-events:none}
+/* מסך מקדים: הקיר של כל השמורים, כותרת וכפתור אחד */
+#pre{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 20px;
+  background:radial-gradient(ellipse 62% 52% at 50% 50%,rgba(244,246,251,.94) 0%,rgba(244,246,251,.8) 55%,rgba(244,246,251,.3) 100%);transition:opacity .45s ease}
+#pre.off{opacity:0;pointer-events:none}
+#pre .eyebrow{font:700 clamp(15px,1.5vw,24px)/1.3 var(--head);color:var(--muted)}
+#pre h1{font:900 clamp(40px,7vw,120px)/1.04 var(--head);margin:.18em 0 0;letter-spacing:-.01em;color:var(--ink)}
+#pre h1 .g{background:linear-gradient(270deg,#77CEBF,#7C9CF0 75%);-webkit-background-clip:text;background-clip:text;color:transparent;display:inline-block;padding-bottom:.06em}
+#preGo{margin-top:clamp(26px,3.4vw,58px);font:900 clamp(20px,2vw,34px)/1 var(--head);color:#06101f;cursor:pointer;border:4px solid #fff;border-radius:999px;
+  padding:.95em 2.1em .85em;background:linear-gradient(90deg,#77CEBF,#7C9CF0);display:inline-flex;align-items:center;gap:.55em;
+  box-shadow:0 18px 50px rgba(11,20,36,.28),0 0 0 0 rgba(119,206,191,.55);animation:prePulse 2.2s ease-out infinite}
+#preGo svg{width:.9em;height:.9em;flex:none}
+#preGo:hover{filter:brightness(1.07)}
+#preGo:focus-visible{outline:4px solid var(--ink);outline-offset:6px}
+@keyframes prePulse{0%{box-shadow:0 18px 50px rgba(11,20,36,.28),0 0 0 0 rgba(119,206,191,.55)}70%{box-shadow:0 18px 50px rgba(11,20,36,.28),0 0 0 30px rgba(119,206,191,0)}100%{box-shadow:0 18px 50px rgba(11,20,36,.28),0 0 0 0 rgba(119,206,191,0)}}
+@media (prefers-reduced-motion:reduce){#preGo{animation:none}}
 #skipIntro{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);font:700 16px/1 var(--head);background:#fff;color:var(--ink);border:2px solid var(--ink);border-radius:999px;padding:12px 26px 10px;cursor:pointer}
 
 /* ראש */
@@ -113,7 +128,7 @@ footer{padding:40px 0 60px;color:var(--muted);font-size:14px;text-align:center}
 </head>
 <body>
 <a class="skip" href="#main">דילוג לתוכן</a>
-<div id="intro" aria-hidden="true"><canvas id="cv"></canvas><button id="skipIntro" type="button">לספרייה</button></div>
+<div id="intro"><canvas id="cv" aria-hidden="true"></canvas><div id="pre" hidden><div class="eyebrow" id="preEye"></div><h1>הספרייה של <span class="g">השמורים</span></h1><button id="preGo" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 4.5v15L5.5 12z" fill="currentColor"/></svg>לסדר את השמורים</button></div><button id="skipIntro" type="button">לספרייה</button></div>
 <div class="wrap" id="main">
   <header>
     <div class="kicker">הספרייה של השמורים</div>
@@ -311,13 +326,14 @@ $('shareClose').addEventListener('click', () => $('shareDlg').close());
 
 // ---------------------------------------------------------------- הפתיחה: הקיר מתפרק לכוננית
 const intro = $('intro'), cv = $('cv'), ctx = cv.getContext('2d');
+let prefilled = false, onPre = false, preStill = false;
 let W = 0, H = 0, DPR = 1, atlas = null, tiles = [], raf = 0, t0 = 0, running = false;
 const ATW = 48, ATH = 60, ACOLS = 40;
 const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;
 const ease = u => u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
 const eout = u => 1 - Math.pow(1 - u, 3);
 const prog = (a, b, x) => clamp((x - a) / (b - a));
-const DUR = 6.6;
+let DUR = 12;
 function loadAtlas() {
   const c = document.createElement('canvas');
   c.width = ACOLS * ATW; c.height = Math.ceil(P.length / ACOLS) * ATH;
@@ -332,6 +348,10 @@ function loadAtlas() {
     im.src = p.th;
   }))).then(() => c);
 }
+// לוח הזמנים: קיר וספירה, הקיר מתכווץ לצד והמדפים מחכים, ואז שיגור מדף אחרי מדף
+const TL = { fill: [0, 1.1], cnt: [.5, 1.7], tint: [1.7, 2.6], cntOut: [2.45, 2.8], pack: [2.7, 3.7], plank: [3.0, 3.9], lab: [3.4, 4.1] };
+const LAUNCH0 = 4.15, PICK = .26, FLIGHT = 1.2;
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
 function layout() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   W = innerWidth; H = innerHeight;
@@ -342,61 +362,112 @@ function layout() {
   let cols = 4;
   for (let c = 3; c < 120; c++) { const r = Math.ceil(n / c); if (r * (W / c) * 1.25 < H) break; cols = c; }
   const tw = W / cols, th = tw * 1.25, rows = Math.ceil(n / cols), oy = (H - rows * th) / 2;
+  // המקור: הקיר מתכווץ לפינה (שמאל במחשב, למטה בנייד) ומשם הפוסטים משוגרים
+  const padX = mobile ? 16 : Math.max(36, W * .05);
+  const src = mobile ? { x: padX, y: H * .71, w: W - padX * 2, h: H * .25 } : { x: padX, y: H * .16, w: W * .27, h: H * .72 };
+  let sc = 2;
+  for (let c = 2; c < 200; c++) { const w = src.w / c, r = Math.ceil(n / c); if (r * w * 1.25 <= src.h) { sc = c; break; } sc = c; }
+  const stw = src.w / sc, sth = stw * 1.25, srows = Math.ceil(n / sc), soy = src.y + (src.h - srows * sth) / 2;
   // הכוננית
-  const padX = mobile ? 16 : Math.max(40, W * .06), labelW = mobile ? 0 : Math.min(260, W * .2);
-  const top = mobile ? H * .2 : H * .17, bottom = H * .92, rowH = (bottom - top) / T.length;
-  const shelfR = W - padX - labelW, shelfL = padX, shelfW = shelfR - shelfL, sw = shelfW / maxCount;
+  const labelW = mobile ? 0 : Math.min(240, W * .17);
+  const top = mobile ? H * .15 : H * .16, bottom = mobile ? H * .66 : H * .9, rowH = (bottom - top) / T.length;
+  const shelfR = W - padX - labelW, shelfL = mobile ? padX : src.x + src.w + W * .06, shelfW = shelfR - shelfL, sw = shelfW / maxCount;
+  // סדר השיגור: מדף אחרי מדף, ובתוך מדף לפי המיקום בקיר
+  const gap = Math.min(.62, 5.2 / Math.max(1, T.length)), spread = 1.35;
   const pos = T.map(() => 0);
   tiles = P.map((p, i) => {
     const c = i % cols, r = Math.floor(i / cols);
     const k = pos[p.t]++;
     const yBase = top + (p.t + 1) * rowH - (mobile ? 6 : 10);
-    const bh = (mobile ? rowH * .5 : rowH * .66) * (.78 + rnd(i) * .22);
+    const bh = (mobile ? rowH * .5 : rowH * .64) * (.78 + rnd(i) * .22);
+    const c2 = i % sc, r2 = Math.floor(i / sc);
     return {
-      i, t: p.t, ax: W - (c + 1) * tw, ay: oy + r * th, aw: tw, ah: th,
+      i, t: p.t, k, ax: W - (c + 1) * tw, ay: oy + r * th, aw: tw, ah: th,
+      sx: src.x + src.w - (c2 + 1) * stw, sy: soy + r2 * sth, sw: stw, sh: sth,
       bx: shelfR - (k + 1) * sw, by: yBase - bh, bw: Math.max(1, sw - (sw > 3 ? 1 : 0)), bh,
-      d: (c / cols) * .5 + rnd(i, 3) * .55, lift: 80 + rnd(i, 4) * 220, light: (rnd(i, 2) - .5) * .22,
+      lift: (mobile ? 60 : 110) + rnd(i, 4) * (mobile ? 120 : 260), spin: (rnd(i, 5) - .5) * 1.6, light: (rnd(i, 2) - .5) * .22,
     };
   });
-  layout.shelf = {top, rowH, shelfR, shelfL, labelW, mobile, padX};
+  tiles.forEach(k => {
+    const cnt = T[k.t].count || pos[k.t] || 1;
+    k.go = LAUNCH0 + k.t * gap + (k.k / Math.max(1, cnt)) * spread + rnd(k.i, 6) * .12;
+    k.land = k.go + PICK + FLIGHT;
+  });
+  const end = Math.max(...tiles.map(k => k.land));
+  DUR = end + 1.1;
+  window.__dur = DUR;
+  layout.shelf = { top, rowH, shelfR, shelfL, labelW, mobile, padX, gap };
 }
 function draw(t) {
   ctx.fillStyle = '#F4F6FB'; ctx.fillRect(0, 0, W, H);
-  const fill = prog(0, 1.1, t), tint = prog(1.7, 2.6, t), fly0 = 2.6, flyLen = 1.25;
+  const fill = prog(...TL.fill, t), tint = prog(...TL.tint, t), pack = ease(prog(...TL.pack, t));
   const S = layout.shelf;
+  // מה נחת כבר, ומה נחת ממש עכשיו (בשביל המונה והזוהר)
+  const landed = T.map(() => 0), glow = T.map(() => 0);
+  for (const k of tiles) {
+    if (t >= k.land) { landed[k.t]++; glow[k.t] = Math.max(glow[k.t], 1 - (t - k.land) / .45); }
+  }
+  // המדף שמשוגר עכשיו
+  const activeT = T.map((_, ti) => { const a = LAUNCH0 + ti * S.gap; return clamp(prog(a - .5, a, t)) * (1 - prog(a + S.gap + 1.6, a + S.gap + 2.2, t)); });
   // מדפים
-  const plank = prog(3.2, 4.2, t);
+  const plank = prog(...TL.plank, t);
   if (plank > 0) {
     T.forEach((tp, ti) => {
       const y = S.top + (ti + 1) * S.rowH - (S.mobile ? 6 : 10);
-      ctx.fillStyle = '#2A3346'; ctx.globalAlpha = plank;
-      const w = (S.shelfR - S.shelfL) * ease(plank);
-      ctx.fillRect(S.shelfR - w, y, w, S.mobile ? 5 : 7);
-      ctx.globalAlpha = 1;
+      const w = (S.shelfR - S.shelfL) * ease(plank), ph = S.mobile ? 5 : 7;
+      ctx.save(); ctx.globalAlpha = plank;
+      if (glow[ti] > 0) { ctx.shadowColor = tp.color; ctx.shadowBlur = 26 * glow[ti]; }
+      ctx.fillStyle = glow[ti] > 0 || activeT[ti] > 0 ? mix('#2A3346', tp.color, Math.max(glow[ti], activeT[ti] * .7)) : '#2A3346';
+      ctx.fillRect(S.shelfR - w, y, w, ph);
+      ctx.restore();
     });
   }
+  // השובלים של מה שבאוויר, מתחת לפוסטים
+  ctx.lineCap = 'round';
   for (const k of tiles) {
-    const appear = clamp((fill - (k.ay / H) * .6) / .4);
+    const u = prog(k.go + PICK, k.land, t);
+    if (u <= 0 || u >= 1) continue;
+    const a = place(k, ease(Math.max(0, u - .16)), pack), b = place(k, ease(u), pack);
+    const g = ctx.createLinearGradient(a.cx, a.cy, b.cx, b.cy);
+    g.addColorStop(0, hexA(T[k.t].color, 0)); g.addColorStop(1, hexA(T[k.t].color, .45));
+    ctx.strokeStyle = g; ctx.lineWidth = Math.max(2, Math.min(b.w, b.h) * .7);
+    ctx.beginPath(); ctx.moveTo(a.cx, a.cy); ctx.lineTo(b.cx, b.cy); ctx.stroke();
+  }
+  for (const k of tiles) {
+    const appear = prefilled ? 1 : clamp((fill - (k.ay / H) * .6) / .4);
     if (appear <= 0) continue;
-    const u = ease(prog(fly0 + k.d, fly0 + k.d + flyLen, t));
-    const x = k.ax + (k.bx - k.ax) * u, y = k.ay + (k.by - k.ay) * u - Math.sin(u * Math.PI) * k.lift;
-    const w = k.aw + (k.bw - k.aw) * u, h = k.ah + (k.bh - k.ah) * u;
-    const sc = u > 0 ? 1 : .6 + .4 * eout(appear);
-    const cx = x + w / 2, cy = y + h / 2, ww = w * sc, hh = h * sc;
-    ctx.globalAlpha = u > 0 ? 1 : appear;
+    const pick = prog(k.go - .45, k.go + PICK, t);       // הדגשה והרמה לפני השיגור
+    const uRaw = prog(k.go + PICK, k.land, t), u = ease(uRaw);
+    const p = place(k, u, pack);
+    let s = uRaw > 0 ? 1 : .6 + .4 * eout(appear);
+    if (uRaw <= 0 && pick > 0) s *= 1 + .35 * Math.sin(pick * Math.PI * .5);
+    const ww = p.w * s, hh = p.h * s;
+    ctx.save(); ctx.translate(p.cx, p.cy);
+    if (uRaw > 0 && uRaw < 1) ctx.rotate(Math.sin(uRaw * Math.PI) * k.spin);
+    ctx.globalAlpha = uRaw > 0 ? 1 : appear;
+    if (pick > 0 && uRaw < .3) { ctx.shadowColor = T[k.t].color; ctx.shadowBlur = 14 * pick; }
     const ax = (k.i % ACOLS) * ATW, ay = Math.floor(k.i / ACOLS) * ATH;
-    if (u < .65) ctx.drawImage(atlas, ax, ay, ATW, ATH, cx - ww / 2 + .5, cy - hh / 2 + .5, ww - 1, hh - 1);
-    const colA = Math.max(tint * .38 * (1 - prog(0, .1, u)), prog(.25, .7, u));
+    if (u < .65) ctx.drawImage(atlas, ax, ay, ATW, ATH, -ww / 2 + .5, -hh / 2 + .5, ww - 1, hh - 1);
+    ctx.shadowBlur = 0;
+    // צבע הנושא: עדין על הקיר, חזק יותר כשהמדף שלו נבחר, מלא בנחיתה
+    const colA = Math.max(tint * .38 * (1 - prog(0, .1, u)), pick * .55 * (1 - prog(0, .1, u)), prog(.25, .7, u));
     if (colA > 0) {
       ctx.globalAlpha = colA;
-      ctx.fillStyle = T[k.t].color; ctx.fillRect(cx - ww / 2 + .5, cy - hh / 2 + .5, ww - 1, hh - 1);
-      if (k.light && u > .7) { ctx.globalAlpha = Math.abs(k.light) * prog(.7, 1, u); ctx.fillStyle = k.light > 0 ? '#fff' : '#000'; ctx.fillRect(cx - ww / 2 + .5, cy - hh / 2 + .5, ww - 1, hh - 1); }
+      ctx.fillStyle = T[k.t].color; ctx.fillRect(-ww / 2 + .5, -hh / 2 + .5, ww - 1, hh - 1);
+      if (k.light && u > .7) { ctx.globalAlpha = Math.abs(k.light) * prog(.7, 1, u); ctx.fillStyle = k.light > 0 ? '#fff' : '#000'; ctx.fillRect(-ww / 2 + .5, -hh / 2 + .5, ww - 1, hh - 1); }
     }
-    ctx.globalAlpha = 1;
+    if (pick > 0 && uRaw <= 0) { ctx.globalAlpha = pick; ctx.strokeStyle = T[k.t].color; ctx.lineWidth = 2; ctx.strokeRect(-ww / 2 + .5, -hh / 2 + .5, ww - 1, hh - 1); }
+    ctx.restore();
+    // הבזק נחיתה
+    const fl = prog(k.land, k.land + .42, t);
+    if (fl > 0 && fl < 1) {
+      ctx.save(); ctx.globalAlpha = (1 - fl) * .8; ctx.strokeStyle = T[k.t].color; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(k.bx + k.bw / 2, k.by + k.bh, 3 + eout(fl) * (S.mobile ? 12 : 20), Math.PI, 2 * Math.PI); ctx.stroke(); ctx.restore();
+    }
   }
   // המונה על הקיר
-  const cnt = prog(.5, 1.7, t), cntOut = prog(2.45, 2.8, t);
-  if (cnt > 0 && cntOut < 1) {
+  const cnt = prog(...TL.cnt, t), cntOut = prog(...TL.cntOut, t);
+  if (cnt > 0 && cntOut < 1 && !preStill) {
     const n = Math.round(DATA.count * eout(cnt));
     const fs = Math.min(W * .16, 190);
     ctx.save(); ctx.globalAlpha = 1 - cntOut;
@@ -410,33 +481,51 @@ function draw(t) {
     ctx.fillStyle = '#0B1424'; ctx.fillText(txt, W / 2, H / 2 + fs * .04);
     ctx.restore();
   }
-  // שמות המדפים
-  const lab = prog(4.1, 4.9, t);
+  // שמות המדפים, עם מונה שעולה בכל נחיתה
+  const lab = prog(...TL.lab, t);
   if (lab > 0) {
     T.forEach((tp, ti) => {
       const a = clamp(lab * 1.6 - ti * .08);
       if (a <= 0) return;
-      ctx.globalAlpha = a; ctx.direction = 'rtl'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+      const act = Math.max(activeT[ti], glow[ti] * .6), pop = 1 + .14 * act;
+      ctx.save(); ctx.globalAlpha = a * (.55 + .45 * Math.max(act, landed[ti] >= tp.count ? 1 : 0, t < LAUNCH0 ? 1 : 0));
+      ctx.direction = 'rtl'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
       const y = S.top + (ti + 1) * S.rowH - (S.mobile ? 6 : 10);
-      const fs = Math.min(S.rowH * (S.mobile ? .3 : .34), 40);
+      const fs = Math.min(S.rowH * (S.mobile ? .3 : .34), 40) * pop;
+      const num = fmt(landed[ti]);
       if (S.mobile) {
         ctx.font = `900 ${fs}px Futurism,'Segoe UI',system-ui,sans-serif`; ctx.fillStyle = tp.color;
-        ctx.fillText(`${tp.name}  ${fmt(tp.count)}`, W - S.padX, y - S.rowH * .58);
+        ctx.fillText(`${tp.name}  ${num}`, W - S.padX, y - S.rowH * .58);
       } else {
         ctx.font = `900 ${fs}px Futurism,'Segoe UI',system-ui,sans-serif`; ctx.fillStyle = tp.color;
         const nw = ctx.measureText(tp.name).width, room = S.labelW - 16;
         if (nw > room) ctx.font = `900 ${fs * room / nw}px Futurism,'Segoe UI',system-ui,sans-serif`;
         ctx.fillText(tp.name, W - S.padX, y - fs * .55);
         ctx.font = `700 ${fs * .62}px Futurism,'Segoe UI',system-ui,sans-serif`; ctx.fillStyle = '#4A5568';
-        ctx.fillText(fmt(tp.count), W - S.padX, y + 2);
+        ctx.fillText(num, W - S.padX, y + 2);
       }
-      ctx.globalAlpha = 1;
+      ctx.restore();
     });
   }
 }
+// מיקום פוסט: מהקיר המלא, דרך הקיר המכווץ, בקשת גבוהה עד הספר במדף
+function place(k, u, pack) {
+  const x0 = k.ax + (k.sx - k.ax) * pack, y0 = k.ay + (k.sy - k.ay) * pack;
+  const w0 = k.aw + (k.sw - k.aw) * pack, h0 = k.ah + (k.sh - k.ah) * pack;
+  const lift = Math.min(k.lift, Math.max(16, Math.min(y0, k.by) - 34));
+  const x = x0 + (k.bx - x0) * u, y = y0 + (k.by - y0) * u - Math.sin(u * Math.PI) * lift;
+  // באמצע הדרך הפוסט גדל קצת, כדי שיראו אותו עף
+  const big = 1 + Math.sin(u * Math.PI) * .9;
+  const w = (w0 + (k.bw - w0) * u) * big, h = (h0 + (k.bh - h0) * u) * big;
+  return { cx: x + w / 2, cy: y + h / 2, w, h };
+}
+function mix(a, b, f) {
+  const p = s => [1, 3, 5].map(i => parseInt(s.slice(i, i + 2), 16)), A = p(a), B = p(b);
+  return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * clamp(f))).join(',')})`;
+}
 function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 function endIntro() {
-  cancelAnimationFrame(raf); running = false;
+  cancelAnimationFrame(raf); running = false; onPre = false;
   intro.classList.add('gone');
   document.body.style.overflow = '';
   setTimeout(() => { intro.hidden = true; }, 650);
@@ -447,26 +536,41 @@ function frame(now) {
   if (t >= DUR + .5) return endIntro();
   raf = requestAnimationFrame(frame);
 }
-async function playIntro() {
+async function playIntro(fromPre = false) {
   if (!atlas) atlas = await loadAtlas();
   try { await document.fonts.load('900 60px Futurism'); } catch (e) {}
   intro.hidden = false; intro.classList.remove('gone');
   document.body.style.overflow = 'hidden';
+  onPre = false; prefilled = fromPre; $('pre').classList.add('off');
+  setTimeout(() => { if (!onPre) $('pre').hidden = true; }, 460);
   layout(); running = true; t0 = performance.now();
   raf = requestAnimationFrame(frame);
 }
-window.__seek = async t => { if (!atlas) atlas = await loadAtlas(); intro.hidden = false; intro.classList.remove('gone'); layout(); cancelAnimationFrame(raf); draw(t); };
+// המסך המקדים: הקיר עומד, כותרת וכפתור. הסידור מתחיל רק בלחיצה
+async function showPre() {
+  if (!atlas) atlas = await loadAtlas();
+  try { await document.fonts.load('900 60px Futurism'); } catch (e) {}
+  intro.hidden = false; intro.classList.remove('gone');
+  document.body.style.overflow = 'hidden';
+  $('preEye').textContent = `${fmt(DATA.count)} פוסטים ששמרת${DATA.oldest ? `, מ-${DATA.oldest.slice(0, 4)} ועד היום` : ''}`;
+  const pre = $('pre'); pre.hidden = false; pre.classList.remove('off'); onPre = true;
+  layout(); prefilled = true; drawPre();
+  $('preGo').focus({ preventScroll: true });
+}
+function drawPre() { preStill = true; draw(1.2); preStill = false; }
+window.__seek = async t => { if (!atlas) atlas = await loadAtlas(); onPre = false; $('pre').hidden = true; intro.hidden = false; intro.classList.remove('gone'); layout(); cancelAnimationFrame(raf); draw(t); };
+$('preGo').addEventListener('click', () => playIntro(true));
 window.__dur = DUR;
 $('skipIntro').addEventListener('click', endIntro);
-intro.addEventListener('click', e => { if (e.target === cv) endIntro(); });
-addEventListener('keydown', e => { if (e.key === 'Escape' && running) endIntro(); });
-addEventListener('resize', () => { if (running) layout(); });
+intro.addEventListener('click', e => { if (e.target === cv && running) endIntro(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && (running || onPre)) { onPre = false; endIntro(); } });
+addEventListener('resize', () => { if (running) layout(); else if (onPre) { layout(); drawPre(); } });
 $('replay').addEventListener('click', () => { scrollTo(0, 0); playIntro(); });
 
 buildCase(); buildTodo(); buildShelves();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (QS.get('nointro') === '1' || reduced) { intro.hidden = true; window.__ready = true; }
-else playIntro().then(() => { window.__ready = true; });
+else showPre().then(() => { window.__ready = true; });
 </script>
 </body>
 </html>
